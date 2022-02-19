@@ -11,8 +11,12 @@ export interface TodoUpdateDto {
 
 const BASE_URL = 'https://localhost:5001/Todo';
 
+const myInit = {
+  headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+};
+
 async function getAll(): Promise<TodoDto[]> {
-  const response = await fetch(BASE_URL);
+  const response = await fetch(BASE_URL, myInit);
   if (!response.ok) {
     return Promise.reject();
   }
@@ -20,11 +24,12 @@ async function getAll(): Promise<TodoDto[]> {
 }
 
 async function getById(id: string): Promise<TodoDto> {
-  const response = await fetch(BASE_URL + '/' + id);
+  const response = await fetch(BASE_URL + '/' + id, myInit);
+  const data = await response.json();
   if (!response.ok) {
-    return Promise.reject();
+    throw data;
   }
-  return await response.json();
+  return data;
 }
 
 async function create(createDto: TodoCreateDto): Promise<TodoDto> {
@@ -45,10 +50,11 @@ async function update(id: string, updateDto: TodoUpdateDto): Promise<TodoDto> {
     headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
     body: JSON.stringify(updateDto),
   });
+  const data = await response.json();
   if (!response.ok) {
-    return Promise.reject();
+    throw data;
   }
-  return await response.json();
+  return data;
 }
 
 async function remove(id: string): Promise<void> {
