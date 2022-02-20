@@ -1,25 +1,33 @@
-import React, { FormEvent, ReactElement, useCallback, useRef } from 'react';
+import React, { ChangeEvent, FormEvent, ReactElement, useState } from 'react';
 import { useMutation, useQueryClient } from 'react-query';
 
-import { todoService } from '../services/todo-service';
+import { ProblemDetails, TodoCreateDto, TodoDto, todoService } from '../services/todo-service';
+import { InlineErrors } from './InlineErrors';
+import { TextInput } from './TextInput';
 
 export function CreateItemForm(): ReactElement {
+  const [task, setTask] = useState('');
   const queryClient = useQueryClient();
-  const mutation = useMutation(todoService.create, { onSuccess: () => queryClient.fetchQuery('todo_items') });
-  const inputEl = useRef<HTMLInputElement>(null);
-  const handleSubmit = useCallback(
-    (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      mutation.mutate({ task: inputEl.current!.value });
-    },
-    [mutation]
-  );
+  const mutation = useMutation<TodoDto, ProblemDetails, TodoCreateDto>((createDto) => todoService.create(createDto));
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
+    event.preventDefault();
+    mutation.mutate({ task }, { onSuccess: () => queryClient.fetchQuery('todo_items') });
+  };
+  const handleTaskChange = (event: ChangeEvent<HTMLInputElement>): void => {
+    setTask(event.target.value);
+  };
+
+  console.log(mutation.error);
 
   return (
     <form onSubmit={handleSubmit}>
       <h2>Create an Item</h2>
-      <label htmlFor="todo_create">Task: </label>
-      <input name="todo_create" ref={inputEl} type="text" />
+
+      {mutation.error ? <p>{mutation.error?.title}</p> : null}
+
+      <InlineErrors error={mutation.error} field="Task" />
+      <TextInput label="Task" name="todo_task" onChange={handleTaskChange} value={task} />
       <button type="submit">Create</button>
     </form>
   );

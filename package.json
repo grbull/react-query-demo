@@ -55,6 +55,9 @@
         {
           "code": 120
         }
+      ],
+      "react/jsx-no-bind": [
+        0
       ]
     }
   }

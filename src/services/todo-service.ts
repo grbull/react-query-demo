@@ -57,10 +57,11 @@ async function create(createDto: TodoCreateDto): Promise<TodoDto> {
     headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
     body: JSON.stringify(createDto),
   });
+  const data = await response.json();
   if (!response.ok) {
-    return Promise.reject();
+    throw data;
   }
-  return await response.json();
+  return data;
 }
 
 async function update(id: string, updateDto: TodoUpdateDto): Promise<TodoDto> {
@@ -79,7 +80,7 @@ async function update(id: string, updateDto: TodoUpdateDto): Promise<TodoDto> {
 async function remove(id: string): Promise<void> {
   const response = await fetch(BASE_URL + '/' + id, { method: 'DELETE' });
   if (!response.ok) {
-    return Promise.reject();
+    return Promise.reject(await response.json());
   }
 }
 
