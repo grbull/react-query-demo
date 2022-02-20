@@ -9,6 +9,25 @@ export interface TodoUpdateDto {
   task: string;
 }
 
+export interface ProblemDetails {
+  type: string;
+  title: string;
+  status: number;
+  traceId: string;
+}
+
+export interface ValidationProblemDetails extends ProblemDetails {
+  errors: {
+    [Key in keyof any]: string[];
+  };
+}
+
+export function isValidationProblemDetails(
+  error: ProblemDetails | ValidationProblemDetails
+): error is ValidationProblemDetails {
+  return (error as ValidationProblemDetails).errors !== undefined;
+}
+
 const BASE_URL = 'https://localhost:5001/Todo';
 
 const myInit = {

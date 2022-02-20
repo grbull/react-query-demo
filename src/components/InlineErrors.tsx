@@ -1,26 +1,29 @@
-import React, { ReactElement, ReactNode } from 'react';
+import React, { ReactElement } from 'react';
+
+import { isValidationProblemDetails, ProblemDetails } from '../services/todo-service';
 
 interface Props {
-  errors: {
-    [Key in keyof any]: string[];
-  };
+  error: ProblemDetails | null;
   field: string;
 }
 
-export function InlineErrors({ field, errors }: Props): ReactElement {
-  if (!errors) {
-    return <div />;
+export function InlineErrors({ error, field }: Props): ReactElement | null {
+  if (!error) {
+    return null;
   }
 
-  if (!errors[field]) {
-    return <div />;
+  if (!isValidationProblemDetails(error)) {
+    return null;
   }
-  console.log(errors[field]);
+
+  if (!error.errors[field]) {
+    return null;
+  }
 
   return (
     <div className="errors-container">
       <ul>
-        {errors[field].map((error) => (
+        {error.errors[field].map((error) => (
           <li key={error}>{error}</li>
         ))}
       </ul>

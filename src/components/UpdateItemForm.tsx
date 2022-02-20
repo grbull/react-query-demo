@@ -1,63 +1,52 @@
 import React, { FormEvent, ReactElement, useCallback, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from 'react-query';
 
-import { TodoDto, todoService, TodoUpdateDto } from '../services/todo-service';
+import { ProblemDetails, TodoDto, todoService, TodoUpdateDto } from '../services/todo-service';
 import { InlineErrors } from './InlineErrors';
+import { Input } from './Input';
 
-interface ProblemDetails {
-  type: string;
-  title: string;
-  status: number;
-  traceId: string;
-}
-
-interface ValidationProblemDetails<T> extends ProblemDetails {
-  errors: {
-    [Key in keyof T]: string[];
-  };
-}
-
-function isValidationProblemDetails<T>(
-  error: ProblemDetails | ValidationProblemDetails<T>
-): error is ValidationProblemDetails<T> {
-  return (error as ValidationProblemDetails<T>).errors !== undefined;
-}
+type Args = { id: string; updateDto: TodoUpdateDto };
 
 export function UpdateItemForm(): ReactElement {
-  const [error, setError] = useState<ProblemDetails | ValidationProblemDetails<TodoDto> | undefined>(undefined);
-
   const queryClient = useQueryClient();
-  const mutation = useMutation(
-    ({ id, updateDto }: { id: string; updateDto: TodoUpdateDto }) => todoService.update(id, updateDto),
-    {
-      onSuccess: () => {
-        queryClient.fetchQuery('todo_items');
-        setError(undefined);
-      },
-      // currently throws a 405 with no problem details, and unable to parse json when no id is provided
-      onError: (error: ProblemDetails) => setError(error),
-    }
+  const mutation = useMutation<TodoDto, ProblemDetails, Args>(
+    ({ id, updateDto }) => todoService.update(id, updateDto),
+    { onSuccess: () => queryClient.fetchQuery('todo_items') }
   );
+
   const idInputEl = useRef<HTMLInputElement>(null);
   const taskInputEl = useRef<HTMLInputElement>(null);
+
   const handleSubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-      mutation.mutate({ id: idInputEl.current!.value, updateDto: { task: taskInputEl.current!.value } });
+      if (idInputEl.current && taskInputEl.current) {
+        const id = idInputEl.current.value;
+        const updateDto = { task: taskInputEl.current.value };
+        mutation.mutate({ id, updateDto });
+      }
     },
     [mutation]
   );
 
+  // TODO, if no id is entered, it calls put on / and gets a 405. Best way to handle?
+  // https://tkdodo.eu/blog/effective-react-query-keys/
+
   return (
     <form onSubmit={handleSubmit}>
       <h2>Update an Item</h2>
-      {error ? <p>{error.title}</p> : null}
-      {error && isValidationProblemDetails(error) ? <InlineErrors errors={error.errors} field="todoId" /> : null}
-      <label htmlFor="todo_id">id: </label>
-      <input name="todo_id" ref={idInputEl} type="text" />
-      {error && isValidationProblemDetails(error) ? <InlineErrors errors={error.errors} field="Task" /> : null}
-      <label htmlFor="todo_task">Task: </label>
-      <input name="todo_task" ref={taskInputEl} type="text" />
+
+      {mutation.error ? <p>{mutation.error?.title}</p> : null}
+
+      <div>
+        <InlineErrors error={mutation.error} field="todoId" />
+        <Input label="ID" name="todo_id" ref={idInputEl} />
+      </div>
+      <div>
+        <InlineErrors error={mutation.error} field="Task" />
+        <Input label="Task" name="todo_task" ref={taskInputEl} />
+      </div>
+
       <button type="submit">Update</button>
     </form>
   );
